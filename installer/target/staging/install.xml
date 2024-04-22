@@ -1,0 +1,69 @@
+<izpack:installation xmlns:izpack="http://izpack.org/schema/installation"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  version="5.0"
+  xsi:schemaLocation="http://izpack.org/schema/installation http://izpack.org/schema/5.0/izpack-installation-5.0.xsd">
+
+  <guiprefs height="360" resizable="no" width="720"/>
+
+  <info>
+    <appname>DungeonCrawler</appname>
+    <appversion>1.0</appversion>
+    <run-privileged condition="izpack.windowsinstall" uninstaller="yes"/>
+  </info>
+
+  <listeners>
+    <listener classname="RegistryInstallerListener" stage="install">
+      <os family="windows"/>
+    </listener>
+    <listener classname="RegistryUninstallerListener" stage="uninstall">
+      <os family="windows"/>
+    </listener>
+  </listeners>
+
+  <locale>
+    <langpack iso3="eng"/>
+  </locale>
+
+  <natives>
+    <native name="ShellLink.dll" type="izpack"/>
+    <native name="ShellLink_x64.dll" type="izpack"/>
+    <native name="COIOSHelper.dll" type="3rdparty" uninstaller="true">
+      <os family="windows"/>
+    </native>
+    <native name="COIOSHelper_x64.dll" type="3rdparty" uninstaller="true">
+      <os family="windows"/>
+    </native>
+  </natives>
+
+  <packs>
+    <pack name="Game" required="true">
+      <description>The game</description>
+      <file src="DungeonCrawler.jar" targetdir="$INSTALL_PATH"/>
+      <fileset dir="resources" targetdir="$INSTALL_PATH/resources"/>
+    </pack>
+  </packs>
+
+  <panels>
+    <panel classname="HelloPanel"/>
+    <panel classname="LicencePanel"/>
+    <panel classname="TargetPanel"/>
+    <panel classname="SummaryPanel"/>
+    <panel classname="InstallPanel"/>
+    <panel classname="ShortcutPanel"/>
+    <panel classname="SimpleFinishPanel"/>
+  </panels>
+
+  <resources>
+    <res id="customicons.xml" src="customicons.xml"/>
+    <res id="shortcutSpec.xml" src="shortcutSpec.xml"/>
+    <res id="Unix_shortcutSpec.xml" src="Unix_shortcutSpec.xml"/>
+    <res id="JFrameIcon" src="resources/appIcon.jpeg"/>
+    <res id="Installer.image" src="installerImage.png"/>
+    <res id="LicencePanel.licence" src="license.txt"/>
+  </resources>
+
+  <variables>
+    <variable name="TargetPanel.dir.windows" value="$USER_HOME\AppData\Roaming\DungeonCrawler"/>
+  </variables>
+
+</izpack:installation>

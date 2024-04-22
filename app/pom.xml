@@ -1,0 +1,92 @@
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns="http://maven.apache.org/POM/4.0.0"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <artifactId>app</artifactId>
+  <build>
+    <plugins>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>asd.project.App</mainClass>
+            </manifest>
+          </archive>
+          <descriptorRefs>
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+          </descriptorRefs>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <id>make-assembly</id>
+            <phase>package</phase>
+          </execution>
+        </executions>
+        <groupId>org.apache.maven.plugins</groupId>
+        <version>3.6.0</version>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+    <dependency>
+      <artifactId>agent</artifactId>
+      <groupId>asd.project</groupId>
+      <version>1</version>
+    </dependency>
+
+    <dependency>
+      <artifactId>network</artifactId>
+      <groupId>asd.project</groupId>
+      <version>1</version>
+    </dependency>
+
+    <dependency>
+      <artifactId>ui</artifactId>
+      <groupId>asd.project</groupId>
+      <version>1</version>
+    </dependency>
+
+    <dependency>
+      <artifactId>storage</artifactId>
+      <groupId>asd.project</groupId>
+      <version>1</version>
+    </dependency>
+
+    <dependency>
+      <artifactId>world-generator</artifactId>
+      <groupId>asd.project</groupId>
+      <version>1</version>
+    </dependency>
+
+    <dependency>
+      <artifactId>game</artifactId>
+      <groupId>asd.project</groupId>
+      <version>1</version>
+    </dependency>
+    <dependency>
+      <artifactId>log4j-core</artifactId>
+      <groupId>org.apache.logging.log4j</groupId>
+      <version>2.12.4</version>
+    </dependency>
+  </dependencies>
+  <modelVersion>4.0.0</modelVersion>
+
+  <name>jar-builder</name>
+  <packaging>jar</packaging>
+
+  <parent>
+    <artifactId>dungeon-crawler</artifactId>
+    <groupId>asd.project</groupId>
+    <version>1</version>
+  </parent>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <url>https://maven.apache.org</url>
+</project>

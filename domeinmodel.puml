@@ -1,0 +1,130 @@
+Domain Model
+@startuml
+'https://plantuml.com/class-diagram
+
+abstract class Vak {
+    + begaanbaar: boolean
+}
+
+class Vak {
+}
+
+class Steen {
+}
+Steen --|> Vak
+
+class Val {
+}
+Val --|> Vak
+
+class LevensValkuil {
+}
+LevensValkuil --|> Val
+
+class KlemzetValKuil {
+}
+KlemzetValKuil --|> Val
+
+class Deur {
+    + vergrendeld: boolean
+    + prijs: int
+}
+Deur --|> Vak
+
+Vak "1" -- "0..1" Attribuut : heeft >
+Vak "1" -- "0..1" Monster : heeft >
+Vak "1" -- "0..1" Knight : heeft >
+
+KrachtBevorderendAttribuut --|> Attribuut
+
+Flag --|> Attribuut
+
+class Zaag {
+}
+Zaag --|> KrachtBevorderendAttribuut
+
+class KrachtBevorderendAttribuut {
+}
+note bottom of KrachtBevorderendAttribuut
+    Dit domeinentiteit moet verder uitgewerkt worden.
+    Valt buiten het domein van een domeinmodel.
+    Wij stellen voor deze te scheiden met Kracht, Levens en Geld bevorderend
+end note
+
+
+class LevensElixer {
+}
+ LevensElixer --|> KrachtBevorderendAttribuut
+
+class DoubleCoinsPowerUp {
+}
+ DoubleCoinsPowerUp --|> KrachtBevorderendAttribuut
+
+
+class Monster {
+-schade: int
+-leven: int
+}
+
+class DemonEye {
+}
+DemonEye --|> Monster : is een >
+
+class DemonKnight {
+}
+DemonKnight --|> Monster : is een >
+
+class Dragon {
+}
+Dragon --|> Monster : is een >
+
+class Skeleton {
+}
+Skeleton --|> Monster : is een >
+
+class SkeletonKnight {
+}
+SkeletonKnight --|> Monster : is een >
+
+class Lich {
+}
+Lich --|> Monster : is een >
+
+class Wolf {
+}
+Wolf --|> Monster : is een >
+
+class Hound {
+}
+Hound --|> Monster : is een >
+
+class HellHound {
+}
+HellHound --|> Monster : is een >
+
+
+class KasteelPryzaroth {
+}
+KasteelPryzaroth "1" -- "0..*" Kerker : heeft >
+
+class Kerker {
+}
+Kerker "1" -- "0..*" Kamer : heeft >
+
+class Kamer {
+}
+Kamer "1" --- "0..*" Vak : heeft >
+
+class Knight {
+}
+Knight "1" -- "0..1" Agent : kan bevatten >
+Monster "1" -- "0..1" Agent : kan bevatten >
+
+class Agent {
+}
+note right of Agent
+    Dit domeinentiteit moet verder uitgewerkt worden.
+    Valt buiten het domein van de wereldgenerator.
+end note
+
+@enduml

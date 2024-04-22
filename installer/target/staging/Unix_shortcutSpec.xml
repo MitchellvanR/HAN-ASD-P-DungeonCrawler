@@ -1,0 +1,31 @@
+<izpack:shortcuts xmlns:izpack="http://izpack.org/schema/shortcuts"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  version="5.0"
+  xsi:schemaLocation="http://izpack.org/schema/shortcuts http://izpack.org/schema/5.0/izpack-shortcuts-5.0.xsd">
+
+  <programGroup defaultName="$APP_NAME" location="applications"/>
+
+  <shortcut
+    commandLine="-jar DungeonCrawler.jar"
+    desktop="true"
+    iconFile="$INSTALL_PATH/resources/appIcon.jpeg"
+    name="$APP_NAME"
+    programGroup="true"
+    target="/usr/bin/java"
+    type="Application"
+
+    workingDirectory="$INSTALL_PATH">
+  </shortcut>
+
+  <shortcut
+    commandLine="-jar $INSTALL_PATH/Uninstaller/uninstaller.jar"
+    desktop="true"
+    iconFile="trashcan_full"
+    name="Uninstall $APP_NAME"
+    programGroup="true"
+    target="/usr/bin/java"
+
+    type="Application">
+  </shortcut>
+
+</izpack:shortcuts>

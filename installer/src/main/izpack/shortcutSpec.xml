@@ -1,0 +1,17 @@
+<izpack:shortcuts xmlns:izpack="http://izpack.org/schema/shortcuts"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  version="5.0"
+  xsi:schemaLocation="http://izpack.org/schema/shortcuts http://izpack.org/schema/5.0/izpack-shortcuts-5.0.xsd">
+
+  <programGroup defaultName="$APP_NAME" location="applications"/>
+
+  <shortcut
+    desktop="true"
+    iconFile="$INSTALL_PATH\resources\winIcon.ico"
+    name="$APP_NAME"
+    programGroup="true"
+    target="$INSTALL_PATH\DungeonCrawler.jar"
+    workingDirectory="$INSTALL_PATH">
+  </shortcut>
+
+</izpack:shortcuts>

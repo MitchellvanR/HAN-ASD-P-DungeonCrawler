@@ -1,0 +1,112 @@
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns="http://maven.apache.org/POM/4.0.0"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <artifactId>installer</artifactId>
+
+  <build>
+    <defaultGoal>package</defaultGoal>
+
+    <plugins>
+      <!-- Copy resources to staging directory -->
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <configuration>
+              <target>
+                <copydir dest="${staging.dir}" src="${izpack.dir}"/>
+                <copydir dest="${staging.dir}/resources" src="${resources.dir}"/>
+              </target>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <id>copy-resources</id>
+            <phase>validate</phase>
+          </execution>
+        </executions>
+        <groupId>org.apache.maven.plugins</groupId>
+        <version>3.1.0</version>
+      </plugin>
+
+      <!-- Copy game jar to staging directory -->
+      <plugin>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <artifactId>app</artifactId>
+                  <classifier>jar-with-dependencies</classifier>
+                  <destFileName>DungeonCrawler.jar</destFileName>
+                  <groupId>asd.project</groupId>
+                  <outputDirectory>${staging.dir}</outputDirectory>
+                  <overWrite>true</overWrite>
+                  <type>jar</type>
+                  <version>1</version>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <id>copy-izpack-dependencies</id>
+            <phase>prepare-package</phase>
+          </execution>
+        </executions>
+        <groupId>org.apache.maven.plugins</groupId>
+        <version>3.6.1</version>
+      </plugin>
+
+      <!-- We need to tell the izpack-maven-plugin what to use as the base directory (this is our staging area),
+           and also tell it the install file to use. -->
+      <plugin>
+        <artifactId>izpack-maven-plugin</artifactId>
+        <dependencies>
+          <dependency>
+            <artifactId>izpack-panel</artifactId>
+            <groupId>org.codehaus.izpack</groupId>
+            <version>${izpack.version}</version>
+          </dependency>
+        </dependencies>
+        <executions>
+          <execution>
+            <configuration>
+              <!-- base for relative paths in izpack descriptor -->
+              <baseDir>${staging.dir}</baseDir>
+              <classifier>installer</classifier>
+              <installFile>${staging.dir}/install.xml</installFile>
+              <output>${project.build.directory}/${installer.filename}</output>
+            </configuration>
+            <goals>
+              <goal>izpack</goal>
+            </goals>
+            <phase>package</phase>
+          </execution>
+        </executions>
+        <groupId>org.codehaus.izpack</groupId>
+        <version>${izpack.version}</version>
+      </plugin>
+    </plugins>
+  </build>
+
+  <modelVersion>4.0.0</modelVersion>
+  <name>installer</name>
+
+  <parent>
+    <artifactId>dungeon-crawler</artifactId>
+    <groupId>asd.project</groupId>
+    <relativePath>../pom.xml</relativePath>
+    <version>1</version>
+  </parent>
+
+  <properties>
+    <installer.filename>DungeonCrawler setup.jar</installer.filename>
+    <izpack.dir>${project.basedir}/src/main/izpack</izpack.dir>
+    <izpack.version>5.2.0</izpack.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <resources.dir>${project.parent.relativePath}/../resources</resources.dir>
+    <staging.dir>${project.build.directory}/staging</staging.dir>
+  </properties>
+</project>
