@@ -7,6 +7,7 @@ import asd.project.NetworkStructure;
 import asd.project.command.CommandError;
 import asd.project.config.world.EntityConfig;
 import asd.project.domain.Room;
+import asd.project.domain.dto.SubHostDTO;
 import asd.project.domain.dto.serializable.MessageDTO;
 import asd.project.domain.dto.serializable.StartGameDTO;
 import asd.project.domain.event.Event;
@@ -19,11 +20,7 @@ import java.awt.Color;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,31 +42,45 @@ public class Client extends NetworkStructure {
   @Override
   public void start() {
     try {
-      socket = new Socket();
-      socket.connect(new InetSocketAddress(ip, port), 3000);
-      objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
-
-      String connectedMessage = String.format("Connected %s", socket);
-      LOGGER.log(Level.INFO, connectedMessage);
-      createKeepAliveThread();
-      handleInput(socket);
-    } catch (IOException exception) {
-      String exceptionMessage = String.format("Exception thrown in Client.start: %s",
-          exception.getMessage());
-      LOGGER.log(Level.SEVERE, exceptionMessage);
+      createClient();
+    } catch (IOException e) {
+      handleIOException(e);
     }
   }
 
+  private void createClient() throws IOException {
+    var socket = createClientSocket();
+    objectOutputStream = new ObjectOutputStream(socket.getOutputStream());
+    LOGGER.log(Level.INFO, String.format("Connected %s", socket));
+    createKeepAliveThread();
+    handleInput(socket);
+  }
+
+  private Socket createClientSocket() throws IOException {
+    socket = new Socket();
+    socket.connect(new InetSocketAddress(ip, port), 3000);
+    return socket;
+  }
+
   private void createKeepAliveThread() {
-    new Thread(() -> {
-      long timestamp = System.currentTimeMillis();
-      while (true) {
-        if (System.currentTimeMillis() - timestamp >= 500 && !handleHostDisconnectExecuting) {
-          handleOutput(new KeepAliveDTO());
-          timestamp = System.currentTimeMillis();
-        }
-      }
-    }).start();
+    new Thread(this::startKeepAlive).start();
+  }
+
+  private void startKeepAlive() {
+    long timestamp = System.currentTimeMillis();
+    while (true) {
+      timestamp = evaluateConnectionInterval(timestamp);
+    }
+  }
+
+  private long evaluateConnectionInterval(long timestamp) {
+    if (!checkConnectionInterval(timestamp)) return System.currentTimeMillis();
+    handleOutput(new KeepAliveDTO());
+    return System.currentTimeMillis();
+  }
+
+  private boolean checkConnectionInterval(long timestamp) {
+    return System.currentTimeMillis() - timestamp >= 500 && !handleHostDisconnectExecuting;
   }
 
   @Override
@@ -105,67 +116,111 @@ public class Client extends NetworkStructure {
   }
 
   protected void handleHostDisconnect(int value) {
-    if (handleHostDisconnectExecuting) {
-      return;
-    }
+    if (handleHostDisconnectExecuting) return;
+    startHandlingHostDisconnect();
+    handleHostDisconnectSafely(value);
+  }
+
+  protected void startHandlingHostDisconnect() {
     handleHostDisconnectExecuting = true;
     network.fireEvent(EventType.NETWORK_HOST_DISCONNECT, "");
+  }
+
+  protected void handleHostDisconnectSafely(int value) {
+    try {
+      handleNewHostConnections(value);
+    } catch (UnknownHostException e) {
+      handleUnknownHostException(e);
+    } catch (IOException | InterruptedException | InvalidRoomCodeException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  protected void handleUnknownHostException(UnknownHostException e) {
+    LOGGER.log(Level.SEVERE, String.format("Could not find new host adress, %s.", e));
+    Thread.currentThread().interrupt();
+  }
+
+  protected void handleNewHostConnections(int value) throws IOException, InvalidRoomCodeException, InterruptedException {
     var subHosts = getSubHostListFromStorageAndSetInNetwork();
     var nextSubHost = subHosts.subHostDTOS().get(value);
-    var dropboxService = network.getDropboxService();
-    try {
-      var hostAddress = InetAddress.getLocalHost().getHostAddress();
-      if (nextSubHost.subHost().equals(hostAddress)) {
-        network.fireEvent(EventType.NETWORK_CONNECTION_DISCONNECT, nextSubHost);
-        Room room = new Room(hostAddress, port);
-        dropboxService.updateRoom(network.getRoomCode(), room);
-        if (!dropboxService.isCanConnect()) {
-          network.fireEvent(EventType.NETWORK_INTERNET_CONNECTION_ISSUES, "");
-        } else {
-          LOGGER.log(Level.INFO, () -> String.format("New roomcode: %s", network.getRoomCode()));
-          network.setNetworkStructure(new Server(network));
-          network.startNetworkStructure();
-          network.fireEvent(EventType.NETWORK_HOST_FOUND, "");
-        }
-      } else {
-        LOGGER.log(Level.INFO, () -> String.format("New roomcode: %s", network.getRoomCode()));
-        socket.close();
-        Thread.sleep(6000);
-        network.joinGameWhenHostDisconnect(network.getRoomCode(), value);
-      }
-    } catch (HttpUnauthorizedException | UnknownHostException | InterruptedException exception) {
-      LOGGER.log(Level.SEVERE, String.format("Could not find new host adress, %s.", exception));
-      Thread.currentThread().interrupt();
-    } catch (InvalidRoomCodeException | IOException e) {
-      throw new RuntimeException(String.format("Encountered error: %s,", e));
+
+    if (isDifferentHost(nextSubHost)) {
+      joinNewHost(value);
+      return;
     }
+    if (!canConnectToDropboxService()) {
+      network.fireEvent(EventType.NETWORK_INTERNET_CONNECTION_ISSUES, "");
+      return;
+    }
+    hostNewRoom();
+  }
+
+  private boolean isDifferentHost(SubHostDTO nextSubHost) throws UnknownHostException {
+    var hostAddress = InetAddress.getLocalHost().getHostAddress();
+    return !nextSubHost.subHost().equals(hostAddress);
+  }
+
+  private boolean canConnectToDropboxService() {
+    var dropboxService = network.getDropboxService();
+    return dropboxService.isCanConnect();
+  }
+
+  protected void joinNewHost(int value) throws IOException, InterruptedException, InvalidRoomCodeException {
+    LOGGER.log(Level.INFO, () -> String.format("New roomcode: %s", network.getRoomCode()));
+    socket.close();
+    Thread.sleep(6000);
+    network.joinGameWhenHostDisconnect(network.getRoomCode(), value);
+  }
+
+  protected void hostNewRoom() {
+    LOGGER.log(Level.INFO, () -> String.format("New roomcode: %s", network.getRoomCode()));
+    network.setNetworkStructure(new Server(network));
+    network.startNetworkStructure();
+    network.fireEvent(EventType.NETWORK_HOST_FOUND, "");
   }
 
   @Override
   protected void handleInput(Socket socket) {
     try {
-      var objectInputStream = new ObjectInputStream(socket.getInputStream());
+      handleInputRefactor(socket);
+    } catch (IOException e) {
+      handleIOException(e);
+    }
+  }
 
-      new Thread(() -> {
-        try {
-          while (!socket.isClosed()) {
-            var object = objectInputStream.readObject();
-            Event event = createEvent(object);
-            network.publish(event);
-          }
-        } catch (SocketException e) {
-          LOGGER.log(Level.INFO, "The socket of this client has been closed.");
-          handleHostDisconnect(0);
-        } catch (IOException | ClassNotFoundException ex) {
-          String exceptionMessage = String.format("Exception thrown in Client.handleInput: %s",
-              ex.getMessage());
-          LOGGER.log(Level.SEVERE, exceptionMessage);
-        }
-      }).start();
-    } catch (IOException ex) {
-      String exceptionMessage = String.format("Exception thrown in Client.handleInput: %s",
-          ex.getMessage());
-      LOGGER.log(Level.SEVERE, exceptionMessage);
+  private void handleInputRefactor(Socket socket) throws IOException {
+    var objectInputStream = new ObjectInputStream(socket.getInputStream());
+    new Thread(() -> {
+      listenForInputSafely(objectInputStream, socket);
+    }).start();
+  }
+
+  private void handleIOException(IOException e) {
+    String exceptionMessage = String.format("Exception thrown in Client.handleInput: %s", e.getMessage());
+    LOGGER.log(Level.SEVERE, exceptionMessage);
+  }
+
+  private void listenForInputSafely(ObjectInputStream objectInputStream, Socket socket) {
+    try {
+      listenForInput(objectInputStream, socket);
+    } catch (SocketException e) {
+      handleSocketException(e);
+    } catch (IOException | ClassNotFoundException e) {
+        throw new RuntimeException(e);
+    }
+  }
+
+  private void handleSocketException(SocketException e) {
+    LOGGER.log(Level.INFO, "The socket of this client has been closed.");
+    handleHostDisconnect(0);
+  }
+
+  private void listenForInput(ObjectInputStream objectInputStream, Socket socket) throws IOException, ClassNotFoundException {
+    while (!socket.isClosed()) {
+      var object = objectInputStream.readObject();
+      Event event = createEvent(object);
+      network.publish(event);
     }
   }
 
